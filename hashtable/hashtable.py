@@ -28,6 +28,13 @@ class HashTable:
         Implement this, and/or DJB2.
         """
 
+        total = 0
+        for b in key.encode():
+            total += b
+            total &= 0xffffffffffffffff
+
+        return total
+
     def djb2(self, key):
         """
         DJB2 32-bit hash function
@@ -35,11 +42,12 @@ class HashTable:
         Implement this, and/or FNV-1.
         """
 
-        hash = 5381
-        for x in key:
-            hash = (hash * 33) + ord(x)
-            hash &= 0xffffffff
-        return hash
+        total = 0
+        for b in key.encode():
+            total += b
+            total &= 0xffffffff
+
+        return total
 
     def hash_index(self, key):
         """
@@ -58,8 +66,14 @@ class HashTable:
         Implement this.
         """
 
-        index = self.hash_index(key)
-        self.storage[index] = value
+        targ = self.hash_index(key)
+        if self.head is None:
+            self.head = HashTableEntry(key = targ, value = value)
+        else:
+            n = self.head
+            while n.next is not None and n.key is not targ:
+                n = n.next
+            n.next = HashTableEntry(key = targ, value = value)
 
     def delete(self, key):
         """
@@ -70,10 +84,31 @@ class HashTable:
         Implement this.
         """
 
-        index = self.hash_index(key)
-        if self.storage[index] is None:
-            print("Key is not found, WARNING!!")
-        self.storage[index] = None
+        if self.head is None:
+            return "Key Not Found"
+        else:
+            targ = self.hash_index(key=key)
+            #previous node
+            p = None
+            #current Node
+            n = self.head
+            #while n has a next node
+            while n.next is not None:
+                #if the current node key is the hashed key we are looking for, break the while loop
+                if n.key == targ:
+                    break
+                #else set previous to current node and current to next node
+                else:
+                    p = n
+                    n = n.next
+
+            #store the value so we can return it
+            val = n.value
+            #if p is not none then skip n
+            if p is not None:
+                p.next = n.next
+            #finally delete n
+            del(n)
 
     def get(self, key):
         """
@@ -84,11 +119,15 @@ class HashTable:
         Implement this.
         """
 
-        index = self.hash_index(key)
-        if self.storage[index] is None:
-            return None
-        else:
-            return self.storage[index]
+        targ = self.hash_index(key=key)
+        if self.head is not None:
+            n = self.head
+            while n.next is not None:
+                if n.key == targ:
+                    return n.value
+                n = n.next
+
+        return "Key not Found"
 
     def resize(self):
         """
@@ -115,15 +154,15 @@ if __name__ == "__main__":
     print(ht.get("line_3"))
 
     # Test resizing
-    #old_capacity = len(ht.storage)
-    #ht.resize()
-    #new_capacity = len(ht.storage)
+    old_capacity = len(ht.storage)
+    ht.resize()
+    new_capacity = len(ht.storage)
 
-    #print(f"\nResized from {old_capacity} to {new_capacity}.\n")
+    print(f"\nResized from {old_capacity} to {new_capacity}.\n")
 
     # Test if data intact after resizing
-    #print(ht.get("line_1"))
-    #print(ht.get("line_2"))
-    #print(ht.get("line_3"))
+    print(ht.get("line_1"))
+    print(ht.get("line_2"))
+    print(ht.get("line_3"))
 
-    #print("")
+    print("")
