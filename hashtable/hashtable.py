@@ -8,6 +8,8 @@ class HashTableEntry:
         self.value = value
         self.next = None
 
+    def __repr__(self):
+        return (f"(key = {self.key}, value = {self.value})")
 
 class HashTable:
     """
@@ -17,6 +19,10 @@ class HashTable:
     Implement this.
     """
 
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.storage = [None] * capacity
+
     def fnv1(self, key):
         """
         FNV-1 64-bit hash function
@@ -24,12 +30,26 @@ class HashTable:
         Implement this, and/or DJB2.
         """
 
+        total = 0
+        for b in key.encode():
+            total += b
+            total &= 0xffffffffffffffff
+
+        return total
+
     def djb2(self, key):
         """
         DJB2 32-bit hash function
 
         Implement this, and/or FNV-1.
         """
+
+        total = 0
+        for b in key.encode():
+            total += b
+            total &= 0xffffffff
+
+        return total
 
     def hash_index(self, key):
         """
@@ -48,6 +68,18 @@ class HashTable:
         Implement this.
         """
 
+        index = self.hash_index(key)
+        if self.storage[index] is None:
+            self.storage[index] = HashTableEntry(key=key, value=value)
+        else:
+            n = self.storage[index]
+            while n.next is not None and n.key != key:
+                n=n.next
+            if n.key == key:
+                n.value = value
+            else:
+                n.next = HashTableEntry(key=key, value=value)
+
     def delete(self, key):
         """
         Remove the value stored with the given key.
@@ -56,6 +88,34 @@ class HashTable:
 
         Implement this.
         """
+
+        index = self.hash_index(key=key)
+        if self.storage[index] is None:
+           return None
+        else:
+            
+            #previous node
+            p = None
+            #current Node
+            n = self.storage[index]
+            #while n has a next node
+            while n.next is not None:
+                #if the current node key is the hashed key we are looking for, break the while loop
+                if n.key == key:
+                    break
+                #else set previous to current node and current to next node
+                else:
+                    p = n
+                    n = n.next
+
+            #store the value so we can return it
+            val = n.value
+            #if p is not none then skip n
+            if p is None:
+                self.storage[index] = None
+            #finally delete n
+            else:
+                p.next = n.next
 
     def get(self, key):
         """
@@ -66,6 +126,17 @@ class HashTable:
         Implement this.
         """
 
+        index = self.hash_index(key=key)
+        if self.storage[index] is not None:
+            n = self.storage[index]
+            while n.next is not None:
+                if n.key == key:
+                    return n.value
+                n = n.next
+            return n.value
+
+        return None
+
     def resize(self):
         """
         Doubles the capacity of the hash table and
@@ -74,30 +145,32 @@ class HashTable:
         Implement this.
         """
 
+        key_values = {}
+        for head in self.storage:
+            if head is None:
+                pass
+            else:
+                n=head
+                key_values[n.key] = n.value
+                while n.next is not None:
+                    key_values[n.key] = n.value
+                    n = n.next
+
+        t_ht = HashTable(self.capacity*2)
+        for key,value in key_values.items():
+            t_ht.put(key, value)
+
+        self.capacity *= 2
+        self.storage = t_ht.storage
+
 if __name__ == "__main__":
     ht = HashTable(2)
 
     ht.put("line_1", "Tiny hash table")
     ht.put("line_2", "Filled beyond capacity")
-    ht.put("line_3", "Linked list saves the day!")
+    
+    print(ht.storage)
 
-    print("")
+    ht.delete("line_1")
 
-    # Test storing beyond capacity
-    print(ht.get("line_1"))
-    print(ht.get("line_2"))
-    print(ht.get("line_3"))
-
-    # Test resizing
-    old_capacity = len(ht.storage)
-    ht.resize()
-    new_capacity = len(ht.storage)
-
-    print(f"\nResized from {old_capacity} to {new_capacity}.\n")
-
-    # Test if data intact after resizing
-    print(ht.get("line_1"))
-    print(ht.get("line_2"))
-    print(ht.get("line_3"))
-
-    print("")
+    print(ht.storage)
